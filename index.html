@@ -26,6 +26,19 @@
           <div><strong id="mappedTopicStat">—</strong><span>Mapped topics</span></div>
         </div>
         <div id="homeProgress" class="smart-summary"></div>
+        <div class="cloud-sync-card">
+          <div class="cloud-sync-heading"><div><p class="eyebrow">Cloud Progress</p><h3>Continue on any device</h3></div><span id="cloudStatus" class="sync-status">Local only</span></div>
+          <div id="cloudSignedOut" class="cloud-auth-row">
+            <input id="cloudEmail" type="email" autocomplete="email" placeholder="Your email address" aria-label="Email address for progress sync">
+            <button id="cloudSignIn" class="primary" type="button">Email me a sign-in link</button>
+          </div>
+          <div id="cloudSignedIn" class="cloud-auth-row hidden">
+            <span id="cloudAccount" class="muted"></span>
+            <button id="cloudSyncNow" class="secondary" type="button">Sync now</button>
+            <button id="cloudSignOut" class="ghost" type="button">Sign out</button>
+          </div>
+          <p id="cloudMessage" class="note">Sign in with the same email on your phone and computer to share progress.</p>
+        </div>
         <div id="dailyPlan" class="daily-plan"></div>
         <div class="actions">
           <button id="startDailyReview" class="primary">Start Daily Review</button>
@@ -38,7 +51,7 @@
           <button id="showMistakes" class="ghost">Mistake Notebook</button>
           <button id="startCompetition" class="danger">Competition Simulation</button>
         </div>
-        <p class="note">Progress and mistake patterns are saved only in this browser on this device. The trainer uses local storage and does not need an account.</p>
+        <p class="note">Progress is always saved on this device. Email sign-in is optional and adds cloud sync so the same progress can be used on your phone and computer.</p>
         <p class="note">The Knowledge Map is a broad study roadmap built around the 10 official scope categories. Study-ready lessons and quiz questions are expanded over time; the map is broader than the current lesson bank and is not an official UMak question set.</p>
       </div>
     </section>
@@ -368,6 +381,7 @@
       <div id="smartReview" class="review-list"></div>
     </section>
   </main>
+  <script src="supabase.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

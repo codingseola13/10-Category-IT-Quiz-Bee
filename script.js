@@ -205,6 +205,10 @@ window.addEventListener('resize',()=>requestAnimationFrame(drawMapConnectors));
 const screens = [...document.querySelectorAll('.screen')];
 const STORAGE_KEY='itQuizBeeTrainerProgressV2';
 const $=id=>document.getElementById(id);
+const SUPABASE_URL='https://vqwzswxvncxnzupencop.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_948iYaKr_SjEqScLP3BmFQ_6k6042QF';
+const cloudClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)||null;
+let cloudUser=null,cloudSyncTimer=null,cloudApplying=false;
 function show(id,resetScroll=true){screens.forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(resetScroll)window.scrollTo({top:0,behavior:'smooth'});}
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function normalize(s){return (s||'').toLowerCase().trim().replace(/[’']/g,"'").replace(/[^a-z0-9+#' -]/g,'').replace(/\s+/g,' ');}
@@ -213,9 +217,9 @@ function pct(a,b){return b?Math.round(a/b*100):0;}
 function formatDate(ts){return new Date(ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function statKey(category,concept){return `${category}|||${concept}`;}
 function emptyStat(){return {attempts:0,correct:0,wrong:0,totalTime:0,mcqAttempts:0,mcqCorrect:0,recallAttempts:0,recallCorrect:0,smartAttempts:0,smartCorrect:0,slowCorrect:0,timeouts:0,unsure:0,unsureWrong:0,streak:0,bestStreak:0,lastSeen:0,dueAt:0,reviewLevel:0,correctDays:[],confidence:{guess:0,unsure:0,confident:0}};}
-function emptyProgress(){return {version:2,createdAt:Date.now(),attempts:[],conceptStats:{},categoryStats:{},mistakes:[]};}
+function emptyProgress(){return {version:2,createdAt:Date.now(),updatedAt:Date.now(),attempts:[],conceptStats:{},categoryStats:{},mistakes:[]};}
 function loadProgress(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return emptyProgress();const data=JSON.parse(raw);if(!data||data.version!==2)return emptyProgress();data.mistakes=Array.isArray(data.mistakes)?data.mistakes:[];return data;}catch(e){return emptyProgress();}}
-function saveProgress(){localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));}
+function saveProgress(){progress.updatedAt=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));queueCloudSync();}
 let progress=loadProgress();
 function ensureStat(bucket,key){if(!bucket[key])bucket[key]=emptyStat();return bucket[key];}
 function dayKey(ts=Date.now()){return new Date(ts).toISOString().slice(0,10);}
@@ -267,7 +271,93 @@ function renderDailyPlan(){const due=dueConceptRows().length,mastered=allConcept
 const STUDY_STORAGE_KEY='itQuizBeeStudyMarksV1';
 function loadStudyMarks(){try{return JSON.parse(localStorage.getItem(STUDY_STORAGE_KEY)||'{}')||{};}catch(e){return {};}}
 let studyMarks=loadStudyMarks();
-function saveStudyMarks(){localStorage.setItem(STUDY_STORAGE_KEY,JSON.stringify(studyMarks));}
+function saveStudyMarks(){progress.updatedAt=Date.now();localStorage.setItem(STUDY_STORAGE_KEY,JSON.stringify(studyMarks));localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));queueCloudSync();}
+
+function setCloudMessage(message,type=''){
+  const el=$('cloudMessage');
+  if(!el)return;
+  el.textContent=message;
+  el.className=`note cloud-message ${type}`.trim();
+}
+function renderCloudState(){
+  const signedIn=!!cloudUser;
+  $('cloudSignedOut').classList.toggle('hidden',signedIn);
+  $('cloudSignedIn').classList.toggle('hidden',!signedIn);
+  $('cloudStatus').textContent=signedIn?'Cloud sync on':'Local only';
+  $('cloudStatus').classList.toggle('connected',signedIn);
+  $('cloudAccount').textContent=signedIn?cloudUser.email:'';
+  if(!cloudClient)setCloudMessage('Cloud sync could not load. Your progress is still saved on this device.','error');
+  else if(signedIn)setCloudMessage('Your quiz history, mastery, mistakes, and studied concepts sync to this account.','success');
+}
+function queueCloudSync(){
+  if(!cloudClient||!cloudUser||cloudApplying)return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>pushCloudProgress(),900);
+}
+async function pushCloudProgress(){
+  if(!cloudClient||!cloudUser||cloudApplying)return;
+  $('cloudStatus').textContent='Syncing…';
+  const {error}=await cloudClient.from('quiz_progress').upsert({user_id:cloudUser.id,progress,study_marks:studyMarks,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(error){$('cloudStatus').textContent='Sync paused';setCloudMessage(`Could not sync: ${error.message}`,'error');return;}
+  $('cloudStatus').textContent='Synced';
+  setCloudMessage(`Progress synced for ${cloudUser.email}.`,'success');
+}
+async function pullCloudProgress(){
+  if(!cloudClient||!cloudUser)return;
+  $('cloudStatus').textContent='Checking…';
+  const {data,error}=await cloudClient.from('quiz_progress').select('progress,study_marks,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+  if(error){$('cloudStatus').textContent='Sync paused';setCloudMessage(`Could not load cloud progress: ${error.message}`,'error');return;}
+  if(!data){await pushCloudProgress();return;}
+  const localHasData=progress.attempts.length||Object.keys(progress.conceptStats||{}).length||Object.keys(studyMarks||{}).length;
+  const cloudTime=new Date(data.updated_at||0).getTime(),localTime=Number(progress.updatedAt||0);
+  if(!localHasData||cloudTime>=localTime){
+    cloudApplying=true;
+    const incoming=data.progress&&data.progress.version===2?data.progress:emptyProgress();
+    incoming.mistakes=Array.isArray(incoming.mistakes)?incoming.mistakes:[];
+    progress=incoming;
+    studyMarks=data.study_marks&&typeof data.study_marks==='object'?data.study_marks:{};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(progress));
+    localStorage.setItem(STUDY_STORAGE_KEY,JSON.stringify(studyMarks));
+    cloudApplying=false;
+    renderHomeProgress();
+    setCloudMessage(`Latest progress loaded for ${cloudUser.email}.`,'success');
+  }else await pushCloudProgress();
+  $('cloudStatus').textContent='Synced';
+}
+async function sendCloudSignIn(){
+  if(!cloudClient)return;
+  const email=$('cloudEmail').value.trim();
+  if(!email||!email.includes('@')){setCloudMessage('Enter a valid email address.','error');$('cloudEmail').focus();return;}
+  $('cloudSignIn').disabled=true;
+  $('cloudSignIn').textContent='Sending…';
+  const emailRedirectTo=location.protocol==='file:'?'https://codingseola13.github.io/10-Category-IT-Quiz-Bee/':`${location.origin}${location.pathname}`;
+  const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo}});
+  $('cloudSignIn').disabled=false;
+  $('cloudSignIn').textContent='Email me a sign-in link';
+  if(error){setCloudMessage(`Sign-in link could not be sent: ${error.message}`,'error');return;}
+  setCloudMessage('Check your email and open the sign-in link. Then return here to see your synced progress.','success');
+}
+async function signOutCloud(){
+  if(!cloudClient)return;
+  await cloudClient.auth.signOut();
+  cloudUser=null;
+  renderCloudState();
+  setCloudMessage('Signed out. New progress will stay on this device until you sign in again.');
+}
+async function initializeCloudSync(){
+  renderCloudState();
+  if(!cloudClient)return;
+  const {data}=await cloudClient.auth.getSession();
+  cloudUser=data.session?.user||null;
+  renderCloudState();
+  if(cloudUser)await pullCloudProgress();
+  cloudClient.auth.onAuthStateChange((event,session)=>{
+    const previousId=cloudUser?.id;
+    cloudUser=session?.user||null;
+    renderCloudState();
+    if(cloudUser&&cloudUser.id!==previousId)setTimeout(()=>pullCloudProgress(),0);
+  });
+}
 function studyKey(category,concept){return `${category}|||${concept}`;}
 function isStudied(category,concept){return !!studyMarks[studyKey(category,concept)];}
 function setStudied(category,concept,value){const k=studyKey(category,concept);if(value)studyMarks[k]=Date.now();else delete studyMarks[k];saveStudyMarks();renderStudyLibrary();renderHomeProgress();}
@@ -361,6 +451,10 @@ $('studyBack').addEventListener('click',()=>{
   renderHomeProgress();show('home');
 });
 $('startStudy').addEventListener('click',()=>openStudyLibrary('recommended'));
+$('cloudSignIn').addEventListener('click',sendCloudSignIn);
+$('cloudEmail').addEventListener('keydown',event=>{if(event.key==='Enter')sendCloudSignIn();});
+$('cloudSyncNow').addEventListener('click',pullCloudProgress);
+$('cloudSignOut').addEventListener('click',signOutCloud);
 $('startDailyReview').addEventListener('click',()=>startDailyReview());
 $('dailyForm').addEventListener('submit',submitDailyAnswer);
 $('dailyNext').addEventListener('click',nextDailyQuestion);
@@ -518,7 +612,8 @@ function finishSmartDrill(){const used=Math.round((Date.now()-smartState.started
   $('smartReview').innerHTML=misses.length?misses.map(m=>`<div class="review-item"><h4>${m.q.category} · ${m.q.concept}</h4><p><strong>${m.q.question}</strong></p><p>Your answer: ${m.chosen}</p><p>Correct answer: ${m.correct}</p><p>${m.q.explanation}</p></div>`).join(''):'<div class="review-item"><h4>Clean drill</h4><p>You answered every Smart Drill question correctly.</p></div>';renderHomeProgress();show('smartResults');}
 
 function exportProgressData(){const blob=new Blob([JSON.stringify(progress,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`it-quiz-bee-progress-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);}
-function resetProgressData(){if(!confirm('Delete all saved quiz history and analytics from this browser?'))return;localStorage.removeItem(STORAGE_KEY);progress=emptyProgress();renderAnalytics();renderHomeProgress();}
+function resetProgressData(){if(!confirm('Delete all saved quiz history and analytics? This reset will sync to your account if cloud sync is on.'))return;progress=emptyProgress();saveProgress();renderAnalytics();renderHomeProgress();}
 
 initTheme();
 renderHomeProgress();
+initializeCloudSync();
