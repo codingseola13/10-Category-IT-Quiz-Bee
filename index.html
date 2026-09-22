@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Quiz Bee Trainer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="global-toolbar">
+    <div class="toolbar-inner">
+      <button id="brandHome" class="toolbar-title toolbar-home" type="button" aria-label="Go to home">IT Quiz Bee Trainer</button>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark mode</button>
+    </div>
+  </div>
+  <main class="app-shell">
+    <section id="home" class="screen active">
+      <div class="hero card">
+        <p class="eyebrow">IT Quiz Bee Trainer</p>
+        <h1>Elimination + Final Round Practice</h1>
+        <p class="lead">Build your understanding from the Knowledge Map and Learn & Review library, then test yourself with elimination, identification, and adaptive drills.</p>
+        <div class="stats-grid">
+          <div><strong>100</strong><span>MCQs</span></div>
+          <div><strong>60 min</strong><span>Elimination</span></div>
+          <div><strong>30</strong><span>Identification</span></div>
+          <div><strong id="mappedTopicStat">—</strong><span>Mapped topics</span></div>
+        </div>
+        <div id="homeProgress" class="smart-summary"></div>
+        <div id="dailyPlan" class="daily-plan"></div>
+        <div class="actions">
+          <button id="startDailyReview" class="primary">Start Daily Review</button>
+          <button id="startStudy" class="primary">Learn & Review Concepts</button>
+          <button id="startElim" class="secondary">Start 100-Item Elimination</button>
+          <button id="startFinal" class="secondary">Start Final Round</button>
+          <button id="startSmartDrill" class="smart">Start Smart Drill</button>
+          <button id="showAnalytics" class="secondary">Smart Analytics</button>
+          <button id="showConcepts" class="ghost">Open Knowledge Map</button>
+          <button id="showMistakes" class="ghost">Mistake Notebook</button>
+          <button id="startCompetition" class="danger">Competition Simulation</button>
+        </div>
+        <p class="note">Progress and mistake patterns are saved only in this browser on this device. The trainer uses local storage and does not need an account.</p>
+        <p class="note">The Knowledge Map is a broad study roadmap built around the 10 official scope categories. Study-ready lessons and quiz questions are expanded over time; the map is broader than the current lesson bank and is not an official UMak question set.</p>
+      </div>
+    </section>
+
+    <section id="dailyReviewScreen" class="screen">
+      <div class="quiz-header card">
+        <div><p class="eyebrow">Daily Review</p><h2 id="dailyProgress">Question 1</h2><p id="dailyCategory" class="muted"></p></div>
+        <div class="timer-box"><span>TIME</span><strong id="dailyTimer">0:00</strong></div>
+      </div>
+      <div class="card recall-card">
+        <span id="dailyReason" class="reason-badge"></span>
+        <h3 id="dailyPrompt"></h3>
+        <form id="dailyForm">
+          <label for="dailyAnswer">Answer from memory</label>
+          <input id="dailyAnswer" type="text" autocomplete="off" placeholder="Type the term" aria-label="Your recalled answer">
+          <fieldset class="confidence-picker"><legend>Before checking, how sure are you?</legend><label><input type="radio" name="dailyConfidence" value="guess"> I guessed</label><label><input type="radio" name="dailyConfidence" value="unsure" checked> Not sure</label><label><input type="radio" name="dailyConfidence" value="confident"> Very sure</label></fieldset>
+          <button class="primary" type="submit">Check Answer</button>
+        </form>
+        <div id="dailyFeedback" class="feedback hidden"></div>
+        <button id="dailyNext" class="primary hidden" type="button">Next</button>
+      </div>
+    </section>
+
+    <section id="dailyResults" class="screen">
+      <div class="card"><p class="eyebrow">Daily Review Complete</p><h2 id="dailyScore"></h2><div id="dailySummary" class="result-insight"></div><div class="actions"><button id="dailyAgain" class="primary">Review Again</button><button id="dailyMistakes" class="secondary">Open Mistake Notebook</button><button class="ghost homeBtn">Home</button></div></div>
+      <div id="dailyReviewList" class="review-list"></div>
+    </section>
+
+    <section id="mistakeScreen" class="screen">
+      <div class="card"><div class="topbar"><div><p class="eyebrow">Mistake Notebook</p><h2>Turn mistakes into review questions</h2><p class="muted">Your latest errors are saved automatically. Practice the concepts again after reading why the answer was missed.</p></div><button class="ghost homeBtn">Back</button></div><div id="mistakeStats" class="stats-grid"></div></div>
+      <div id="mistakeList" class="review-list"></div>
+    </section>
+
+
+    <section id="studyScreen" class="screen">
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Learn & Review</p>
+            <h2>Study the concepts before the quiz</h2>
+            <p class="muted">Beginner explanations, examples, and a short Quiz Bee memory line for every concept currently tracked by the trainer. Marking something as studied means you read it, not that you have mastered it.</p>
+          </div>
+          <button id="studyBack" class="ghost">Back</button>
+        </div>
+        <div id="studyStats" class="stats-grid study-stats"></div>
+        <div class="study-tools">
+          <input id="studySearch" type="search" placeholder="Search a concept, example, or keyword..." aria-label="Search study concepts">
+          <select id="studyCategory" aria-label="Choose category">
+            <option value="all">All categories</option>
+            <option>Basic Computer Concepts / General IT</option>
+            <option>Logic Formulation</option>
+            <option>Operating Systems</option>
+            <option>Software Engineering</option>
+            <option>Object-Oriented Programming</option>
+            <option>Computer Networks and Telecommunication</option>
+            <option>Computer Architecture and IT Security</option>
+            <option>Database Management System</option>
+            <option>Data Science and Analytics</option>
+            <option>E-commerce and Web Design</option>
+          </select>
+          <select id="studyFilter" aria-label="Choose study filter">
+            <option value="recommended">Recommended next</option>
+            <option value="all">All concepts</option>
+            <option value="unread">Not marked studied</option>
+            <option value="untested">Not tested yet</option>
+            <option value="weak">Weak / slow concepts</option>
+          </select>
+        </div>
+        <div class="actions study-actions">
+          <button id="studyWeakBtn" class="smart">Review My Weak Concepts</button>
+          <button id="studyUnreadBtn" class="secondary">Continue Unread Concepts</button>
+        </div>
+        <p id="studyCount" class="muted"></p>
+        <div id="studyList" class="study-list"></div>
+      </div>
+    </section>
+
+    <section id="conceptScreen" class="screen">
+      <div class="card roadmap-hero">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Knowledge Map</p>
+            <h2>Explore the IT knowledge map</h2>
+            <p class="muted">Choose a category, follow its branches, and click any topic to learn more.</p>
+          </div>
+          <button class="ghost homeBtn">Back</button>
+        </div>
+        <div id="mapSummary" class="stats-grid"></div>
+        <div class="map-tools">
+          <input id="mapSearch" type="search" placeholder="Search the knowledge map..." aria-label="Search knowledge map">
+          <select id="mapCategory" aria-label="Filter knowledge map by category">
+            <option>Basic Computer Concepts / General IT</option>
+            <option>Logic Formulation</option>
+            <option>Operating Systems</option>
+            <option>Software Engineering</option>
+            <option>Object-Oriented Programming</option>
+            <option>Computer Networks and Telecommunication</option>
+            <option>Computer Architecture and IT Security</option>
+            <option>Database Management System</option>
+            <option>Data Science and Analytics</option>
+            <option>E-commerce and Web Design</option>
+          </select>
+          <select id="mapStatus" aria-label="Filter knowledge map by status">
+            <option value="all">All map nodes</option>
+            <option value="ready">Study-ready</option>
+            <option value="roadmap">Roadmap only</option>
+            <option value="weak">Needs review</option>
+            <option value="untested">Untested</option>
+            <option value="strong">Strong</option>
+          </select>
+        </div>
+        <div class="map-legend">
+          <span><i class="legend-dot ready"></i> Study-ready</span>
+          <span><i class="legend-dot weak"></i> Needs review</span>
+          <span><i class="legend-dot strong"></i> Strong</span>
+          <span><i class="legend-dot roadmap"></i> Roadmap only</span>
+        </div>
+      </div>
+      <div id="conceptList" class="knowledge-map"></div>
+      <div id="mapDetailBackdrop" class="map-detail-backdrop" hidden></div>
+      <aside id="mapDetailPanel" class="map-detail-panel" role="dialog" aria-modal="true" aria-labelledby="mapDetailTitle" tabindex="-1" hidden>
+        <div class="map-detail-top"><span id="mapDetailLabel" class="eyebrow"></span><button id="mapDetailClose" class="ghost" type="button" aria-label="Close topic details">Close ✕</button></div>
+        <h2 id="mapDetailTitle"></h2>
+        <p id="mapDetailCategory" class="muted"></p>
+        <div id="mapDetailContent"></div>
+        <div id="mapDetailActions" class="actions"></div>
+      </aside>
+    </section>
+
+    <section id="analyticsScreen" class="screen">
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Smart Analytics</p>
+            <h2>Your learning patterns</h2>
+            <p class="muted">Uses your saved attempts to find recurring mistakes, recall gaps, slow areas, and what to review next.</p>
+          </div>
+          <button class="ghost homeBtn">Back</button>
+        </div>
+        <div id="analyticsSummary" class="stats-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">Priority Queue</p>
+            <h3>What to study next</h3>
+          </div>
+          <div class="actions compact-actions"><button id="analyticsStudyWeak" class="secondary">Study These</button><button id="analyticsStartDrill" class="smart">Drill These</button></div>
+        </div>
+        <div id="studyQueue" class="priority-list"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Category Analysis</p>
+        <h3>Recognition, recall, and speed</h3>
+        <div id="persistentCategoryAnalytics" class="analytics-grid"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Pattern Detection</p>
+        <h3>What the data is saying</h3>
+        <div id="patternInsights" class="insight-list"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Weak Concepts</p>
+        <h3>Repeated misses and slow answers</h3>
+        <div id="weakConcepts" class="weak-table-wrap"></div>
+      </div>
+
+      <div class="card">
+        <p class="eyebrow">Attempt History</p>
+        <h3>Recent sessions</h3>
+        <div id="attemptHistory" class="history-list"></div>
+        <div class="actions">
+          <button id="exportProgress" class="secondary">Export Progress</button>
+          <button id="resetProgress" class="danger">Reset Analytics</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="elim" class="screen">
+      <div class="quiz-header card">
+        <div>
+          <p class="eyebrow">Elimination Round</p>
+          <h2 id="elimProgress">Question 1 of 100</h2>
+          <p id="elimCategory" class="muted"></p>
+        </div>
+        <div class="timer-box">
+          <span>TIME LEFT</span>
+          <strong id="elimTimer">60:00</strong>
+        </div>
+      </div>
+      <div class="card question-card">
+        <h3 id="elimQuestion"></h3>
+        <div id="elimOptions" class="options"></div>
+        <label class="unsure-toggle"><input id="elimUnsure" type="checkbox"> Mark this question as unsure</label>
+        <div class="quiz-nav">
+          <button id="elimPrev" class="secondary">Previous</button>
+          <button id="elimNext" class="primary">Next</button>
+        </div>
+      </div>
+      <div class="card progress-card">
+        <div class="bar"><div id="elimBar"></div></div>
+        <p id="answeredCount" class="muted"></p>
+        <button id="submitElim" class="danger">Submit Elimination</button>
+      </div>
+    </section>
+
+    <section id="elimResults" class="screen">
+      <div class="card">
+        <p class="eyebrow">Elimination Results</p>
+        <h2 id="elimScore"></h2>
+        <p id="elimTimeUsed" class="muted"></p>
+        <div id="elimSmartSummary" class="result-insight"></div>
+        <div id="categoryAnalytics" class="analytics-grid"></div>
+        <div class="actions">
+          <button id="reviewElim" class="secondary">Review Missed Questions</button>
+          <button id="goFinal" class="primary">Go to Final Round</button>
+          <button id="resultsAnalytics" class="smart">Open Smart Analytics</button>
+          <button class="ghost homeBtn">Home</button>
+        </div>
+      </div>
+      <div id="elimReview" class="review-list hidden"></div>
+    </section>
+
+    <section id="finalIntro" class="screen">
+      <div class="card">
+        <p class="eyebrow">Final Round</p>
+        <h2>Identification Practice</h2>
+        <div class="round-grid">
+          <div><strong>Easy</strong><span>10 questions · 15 sec · 3 pts</span></div>
+          <div><strong>Average</strong><span>10 questions · 20 sec · 5 pts</span></div>
+          <div><strong>Difficult</strong><span>10 questions · 30 sec · 7 pts</span></div>
+        </div>
+        <p class="note">Type the answer yourself. Answers are checked case-insensitively and accept common equivalent forms.</p>
+        <div class="actions">
+          <button id="beginFinal" class="primary">Begin Easy Round</button>
+          <button class="ghost homeBtn">Home</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="finalQuiz" class="screen">
+      <div class="quiz-header card">
+        <div>
+          <p id="finalLevel" class="eyebrow">Easy</p>
+          <h2 id="finalProgress">Question 1 of 10</h2>
+          <p id="finalCategory" class="muted"></p>
+        </div>
+        <div class="timer-box">
+          <span>SECONDS</span>
+          <strong id="finalTimer">15</strong>
+        </div>
+      </div>
+      <div class="bar final-time"><div id="finalTimeBar"></div></div>
+      <div class="card question-card">
+        <h3 id="finalPrompt"></h3>
+        <form id="finalForm">
+          <input id="finalAnswer" type="text" autocomplete="off" placeholder="Type your answer" aria-label="Your answer">
+          <button class="primary" type="submit">Submit Answer</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="finalResults" class="screen">
+      <div class="card">
+        <p class="eyebrow">Final Round Results</p>
+        <h2 id="finalScore"></h2>
+        <div id="finalSmartSummary" class="result-insight"></div>
+        <div id="finalBreakdown" class="analytics-grid"></div>
+        <div class="actions">
+          <button id="reviewFinal" class="secondary">Review Missed Identification</button>
+          <button id="finalResultsAnalytics" class="smart">Open Smart Analytics</button>
+          <button class="ghost homeBtn">Home</button>
+        </div>
+      </div>
+      <div id="finalReview" class="review-list hidden"></div>
+    </section>
+
+    <section id="smartDrillIntro" class="screen">
+      <div class="card">
+        <p class="eyebrow">Adaptive Practice</p>
+        <h2>Smart Drill</h2>
+        <p class="lead">A 20-question teaching drill that prioritizes concepts you miss, concepts you answer slowly, and concepts you have not tested yet.</p>
+        <div id="smartDrillPlan" class="smart-plan"></div>
+        <div class="actions">
+          <button id="beginSmartDrill" class="smart">Begin 20-Question Drill</button>
+          <button class="ghost homeBtn">Home</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="smartDrill" class="screen">
+      <div class="quiz-header card">
+        <div>
+          <p class="eyebrow">Smart Drill</p>
+          <h2 id="smartProgress">Question 1 of 20</h2>
+          <p id="smartCategory" class="muted"></p>
+        </div>
+        <div class="timer-box">
+          <span>TIME</span>
+          <strong id="smartTimer">0:00</strong>
+        </div>
+      </div>
+      <div class="card question-card">
+        <span id="smartReason" class="reason-badge"></span>
+        <h3 id="smartQuestion"></h3>
+        <div id="smartOptions" class="options"></div>
+        <div id="smartFeedback" class="feedback hidden"></div>
+        <button id="smartNext" class="primary hidden">Next Question</button>
+      </div>
+    </section>
+
+    <section id="smartResults" class="screen">
+      <div class="card">
+        <p class="eyebrow">Smart Drill Complete</p>
+        <h2 id="smartScore"></h2>
+        <div id="smartResultSummary" class="result-insight"></div>
+        <div class="actions">
+          <button id="smartAgain" class="smart">Build Another Smart Drill</button>
+          <button id="smartAnalytics" class="secondary">Open Analytics</button>
+          <button class="ghost homeBtn">Home</button>
+        </div>
+      </div>
+      <div id="smartReview" class="review-list"></div>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
