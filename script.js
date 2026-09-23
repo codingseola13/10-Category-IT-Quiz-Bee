@@ -71,6 +71,14 @@ function mapNodeMatches(category,concept,status,search,filter){
 }
 let studyReturnScreen='home';
 let roadmapReturnScroll=0;
+const savedMapView=localStorage.getItem('itQuizBeeMapCompactV1');
+let mapCompact=savedMapView===null?(window.matchMedia&&window.matchMedia('(max-width:620px)').matches):savedMapView==='1';
+function syncMapView(){
+  $('conceptScreen').classList.toggle('compact-map',mapCompact);
+  $('mapViewToggle').textContent=mapCompact?'Visual roadmap view':'Compact list view';
+  $('mapViewToggle').setAttribute('aria-pressed',String(mapCompact));
+}
+function toggleMapView(){mapCompact=!mapCompact;localStorage.setItem('itQuizBeeMapCompactV1',mapCompact?'1':'0');syncMapView();renderKnowledgeMap();}
 function openStudyConcept(category,concept){
   if(!conceptIsReady(category,concept))return;
   studyReturnScreen='conceptScreen';
@@ -126,6 +134,7 @@ function openMapDetail(category,concept,trigger){
   document.body.classList.add('map-detail-open');$('mapDetailPanel').focus();
 }
 function renderKnowledgeMap(){
+  syncMapView();
   const total=mappedTopicCount(),ready=studyReadyCount(),roadmap=roadmapOnlyCount(),studied=studiedCount();
   $('mapSummary').innerHTML=`<div><strong>${total}</strong><span>Mapped topics</span></div><div><strong>${ready}</strong><span>Study-ready lessons</span></div><div><strong>${roadmap}</strong><span>Roadmap expansion nodes</span></div><div><strong>${studied}/${ready}</strong><span>Marked studied</span></div>`;
   const search=normalize($('mapSearch').value),catFilter=$('mapCategory').value,statusFilter=$('mapStatus').value;
@@ -209,7 +218,7 @@ const SUPABASE_URL='https://vqwzswxvncxnzupencop.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_948iYaKr_SjEqScLP3BmFQ_6k6042QF';
 const cloudClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)||null;
 let cloudUser=null,cloudSyncTimer=null,cloudApplying=false;
-function show(id,resetScroll=true){screens.forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(resetScroll)window.scrollTo({top:0,behavior:'smooth'});}
+function show(id,resetScroll=true){screens.forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(resetScroll)window.scrollTo(0,0);}
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function normalize(s){return (s||'').toLowerCase().trim().replace(/[’']/g,"'").replace(/[^a-z0-9+#' -]/g,'').replace(/\s+/g,' ');}
 function safeNum(n){return Number.isFinite(n)?n:0;}
@@ -256,14 +265,15 @@ function weaknessScore(s){if(!s.attempts)return 35;const accuracy=s.correct/s.at
 function allConceptRows(){return categories.flatMap(category=>concepts[category].map(concept=>({category,concept,stat:getConceptStat(category,concept)})));}
 function questionForConcept(category,concept){return questionPool.find(q=>q.category===category&&q.concept===concept)||null;}
 function renderHomeProgress(){
-  const mappedStat=document.getElementById('mappedTopicStat');if(mappedStat)mappedStat.textContent=mappedTopicCount();
+  const readyStat=document.getElementById('quizReadyStat'),roadmapStat=document.getElementById('roadmapOnlyStat');if(readyStat)readyStat.textContent=totalStudyItems();if(roadmapStat)roadmapStat.textContent=roadmapOnlyCount();
   const attempts=progress.attempts.length;
+  $('startDailyReview').textContent=attempts?'Continue Today’s Review':'Start Today’s Review';
   const tested=allConceptRows().filter(x=>x.stat.attempts>0).length;
   const missed=allConceptRows().filter(x=>x.stat.wrong>0).sort((a,b)=>weaknessScore(b.stat)-weaknessScore(a.stat));
   renderDailyPlan();
-  if(!attempts){$('homeProgress').innerHTML=`<strong>${studiedCount()}/${totalStudyItems()} concepts marked studied.</strong><p>Start in Learn & Review first. Quizzes will then build separate evidence about what you can actually retrieve.</p>`;return;}
+  if(!attempts){$('homeProgress').innerHTML=`<strong>${studiedCount()}/${totalStudyItems()} concepts marked studied.</strong><p>Start today’s mixed review, or open Learn when you want an explanation before testing yourself.</p>`;return;}
   const top=missed[0];
-  $('homeProgress').innerHTML=`<strong>${attempts} saved session${attempts===1?'':'s'} · ${tested}/130 concepts tested · ${studiedCount()}/${totalStudyItems()} marked studied</strong><p>${top?`Current review priority: <b>${top.concept}</b> (${top.category}).`:'No repeated weak concept detected yet.'} Use Learn & Review for explanations, then use quizzes to test retrieval.</p>`;
+  $('homeProgress').innerHTML=`<strong>${attempts} saved session${attempts===1?'':'s'} · ${tested}/${totalStudyItems()} concepts tested · ${studiedCount()}/${totalStudyItems()} marked studied</strong><p>${top?`Current review priority: <b>${top.concept}</b> (${top.category}).`:'No repeated weak concept detected yet.'} Use Learn & Review for explanations, then use quizzes to test retrieval.</p>`;
 }
 function renderDailyPlan(){const due=dueConceptRows().length,mastered=allConceptRows().filter(x=>isMastered(x.stat)).length,open=(progress.mistakes||[]).filter(x=>!x.resolved).length;const el=$('dailyPlan');if(el)el.innerHTML=`<div><span>Due today</span><strong>${due}</strong></div><div><span>Mastered</span><strong>${mastered}/${totalStudyItems()}</strong></div><div><span>Open mistakes</span><strong>${open}</strong></div><p>${due?`${due} spaced review${due===1?' is':'s are'} ready.`:'No scheduled review is overdue. A mixed daily session is still available.'}</p>`;}
 
@@ -394,6 +404,29 @@ function acceptedAnswersFor(category,concept){
   Object.values(finalQuestions).flat().filter(q=>q.category===category&&q.concept===concept).forEach(q=>answers.push(...q.answers));
   return [...new Set(answers.map(normalize).filter(Boolean))];
 }
+const answerAliases={
+  'ROM':['read only memory'],'RAM vs ROM':['random access memory vs read only memory','ram versus rom'],'PaaS':['platform as a service'],'Cloud service model':['cloud service models'],
+  'AND':['logical and'],'OR':['logical or'],'XOR':['exclusive or'],'NOT':['logical not'],"De Morgan's law":['de morgans law','de morgan law'],
+  'TCP vs UDP':['tcp versus udp'],'DNS and DHCP':['dns dhcp','domain name system and dynamic host configuration protocol'],'ARP and NAT':['arp nat','address resolution protocol and network address translation'],'MAC address':['media access control address'],'CIA triad':['confidentiality integrity availability'],
+  '1NF':['first normal form'],'2NF / partial dependency':['second normal form','second normal form partial dependency'],'3NF / transitive dependency':['third normal form','third normal form transitive dependency'],
+  'B2C':['business to consumer'],'B2B':['business to business'],'HTML':['hypertext markup language'],'CSS':['cascading style sheets'],'HTTPS/TLS':['https tls','hypertext transfer protocol secure transport layer security'],'HTTP GET vs POST':['http get versus post'],
+  "Two's complement":['twos complement'],'CORS':['cross origin resource sharing']
+};
+function canonicalAnswer(value){return normalize(value).replace(/'/g,'').replace(/\bversus\b/g,'vs').replace(/^(the|a|an)\s+/,'').trim();}
+function compactAnswer(value){return canonicalAnswer(value).replace(/[\s-]/g,'');}
+function editDistance(a,b){
+  const row=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){let previous=row[0];row[0]=i;for(let j=1;j<=b.length;j++){const saved=row[j];row[j]=Math.min(row[j]+1,row[j-1]+1,previous+(a[i-1]===b[j-1]?0:1));previous=saved;}}
+  return row[b.length];
+}
+function matchAnswer(raw,accepted,concept=''){
+  const entered=canonicalAnswer(raw),enteredCompact=compactAnswer(raw);
+  if(!entered)return {ok:false,method:'empty'};
+  const aliases=answerAliases[concept]||[],candidates=[...new Set([...accepted,...aliases].map(canonicalAnswer).filter(Boolean))];
+  if(candidates.some(candidate=>candidate===entered||compactAnswer(candidate)===enteredCompact))return {ok:true,method:aliases.some(alias=>canonicalAnswer(alias)===entered)?'alias':'exact'};
+  const close=candidates.some(candidate=>{const a=compactAnswer(candidate),b=enteredCompact,longest=Math.max(a.length,b.length);if(Math.min(a.length,b.length)<5||Math.abs(a.length-b.length)>2)return false;return editDistance(a,b)<=(longest>=9?2:1);});
+  return {ok:close,method:close?'close':'wrong'};
+}
 function buildDailySet(limit=20){
   const rows=allConceptRows(),due=dueConceptRows(),weak=rows.filter(x=>x.stat.wrong>0).sort((a,b)=>weaknessScore(b.stat)-weaknessScore(a.stat)),unseen=shuffle(rows.filter(x=>!x.stat.attempts)),slow=rows.filter(x=>x.stat.slowCorrect>0).sort((a,b)=>b.stat.slowCorrect-a.stat.slowCorrect);
   const picked=[],used=new Set();
@@ -455,9 +488,10 @@ function renderDailyQuestion(){
 }
 function updateDailyTimer(){if(!$('dailyReviewScreen').classList.contains('active')||dailyState.answered)return;const sec=Math.floor((Date.now()-dailyState.questionStartedAt)/1000);$('dailyTimer').textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;requestAnimationFrame(updateDailyTimer);}
 function submitDailyAnswer(event){
-  event.preventDefault();if(dailyState.answered)return;stopDailyVoice();dailyState.answered=true;const x=dailyState.questions[dailyState.index],raw=$('dailyAnswer').value,answer=normalize(raw),ok=acceptedAnswersFor(x.category,x.concept).includes(answer),confidence=document.querySelector('input[name="dailyConfidence"]:checked')?.value||'unsure',time=(Date.now()-dailyState.questionStartedAt)/1000,note=studyNotes[x.category][x.concept];
+  event.preventDefault();if(dailyState.answered)return;stopDailyVoice();dailyState.answered=true;const x=dailyState.questions[dailyState.index],raw=$('dailyAnswer').value,match=matchAnswer(raw,acceptedAnswersFor(x.category,x.concept),x.concept),ok=match.ok,confidence=document.querySelector('input[name="dailyConfidence"]:checked')?.value||'unsure',time=(Date.now()-dailyState.questionStartedAt)/1000,note=studyNotes[x.category][x.concept];
   if(ok)dailyState.correct++;recordResult({mode:'recall',category:x.category,concept:x.concept,correct:ok,time,maxTime:30,confidence,prompt:$('dailyPrompt').textContent,given:raw,expected:x.concept,explanation:note[0]});dailyState.results.push({...x,ok,raw,time,confidence});
-  const f=$('dailyFeedback');f.className=`feedback ${ok?'correct':'wrong'}`;f.innerHTML=`<strong>${ok?'Correct.':'Not quite.'}</strong><p class="feedback-answer">${x.concept}</p><p><b>Example:</b> ${note[1]}</p><p><b>Remember:</b> ${note[2]}</p>${ok&&confidence==='guess'?'<p class="feedback-note">Because you marked it as a guess, it will appear again later.</p>':''}`;
+  const acceptedNote=ok&&match.method==='close'?'<p class="feedback-note">Accepted as a close spelling match.</p>':ok&&match.method==='alias'?'<p class="feedback-note">Accepted as an equivalent full term or abbreviation.</p>':'';
+  const f=$('dailyFeedback');f.className=`feedback ${ok?'correct':'wrong'}`;f.innerHTML=`<strong>${ok?'Correct.':'Not quite.'}</strong><p class="feedback-answer">${x.concept}</p>${acceptedNote}<p><b>Example:</b> ${note[1]}</p><p><b>Remember:</b> ${note[2]}</p>${ok&&confidence==='guess'?'<p class="feedback-note">Because you marked it as a guess, it will appear again later.</p>':''}`;
   $('dailyForm').classList.add('hidden');$('dailyNext').textContent=dailyState.index===dailyState.questions.length-1?'Finish Review':'Next Question';$('dailyNext').classList.remove('hidden');$('dailyListen').textContent='🔊 Read answer';setDailyVoiceStatus('Answer checked. Use Read answer to hear the result.');if(dailyState.voiceMode)speakDailyPrompt();
 }
 function nextDailyQuestion(){stopDailyVoice();dailyState.index++;if(dailyState.index>=dailyState.questions.length){finishDailyReview();return;}renderDailyQuestion();}
@@ -510,6 +544,7 @@ $('brandHome').addEventListener('click',()=>{competitionMode=false;renderHomePro
 $('mapSearch').addEventListener('input',renderKnowledgeMap);
 $('mapCategory').addEventListener('change',renderKnowledgeMap);
 $('mapStatus').addEventListener('change',renderKnowledgeMap);
+$('mapViewToggle').addEventListener('click',toggleMapView);
 $('mapDetailClose').addEventListener('click',closeMapDetail);
 $('mapDetailBackdrop').addEventListener('click',closeMapDetail);
 document.addEventListener('keydown',event=>{
@@ -590,7 +625,7 @@ function renderFinalQuestion(){
 }
 function updateFinalTimer(){const level=finalState.levels[finalState.levelIndex],max=levelSeconds(level);$('finalTimer').textContent=finalState.seconds;$('finalTimeBar').style.width=`${Math.max(0,finalState.seconds/max*100)}%`;}
 function submitFinalAnswer(timeout){
-  if(finalState.locked)return;finalState.locked=true;clearInterval(finalState.timer);const level=finalState.levels[finalState.levelIndex],q=finalState.sets[level][finalState.index],raw=timeout?'':$('finalAnswer').value,answer=normalize(raw),ok=q.answers.some(a=>normalize(a)===answer),max=levelSeconds(level),time=Math.min(max,(Date.now()-finalState.questionStartedAt)/1000);finalState.answers[level].push({q,raw:timeout?'Timed out':raw,ok,time});recordResult({mode:'recall',category:q.category,concept:q.concept,correct:ok,time,maxTime:max,timeout,prompt:q.prompt,given:raw||'Timed out',expected:q.answers[0],explanation:q.explanation});
+  if(finalState.locked)return;finalState.locked=true;clearInterval(finalState.timer);const level=finalState.levels[finalState.levelIndex],q=finalState.sets[level][finalState.index],raw=timeout?'':$('finalAnswer').value,ok=!timeout&&matchAnswer(raw,q.answers,q.concept).ok,max=levelSeconds(level),time=Math.min(max,(Date.now()-finalState.questionStartedAt)/1000);finalState.answers[level].push({q,raw:timeout?'Timed out':raw,ok,time});recordResult({mode:'recall',category:q.category,concept:q.concept,correct:ok,time,maxTime:max,timeout,prompt:q.prompt,given:raw||'Timed out',expected:q.answers[0],explanation:q.explanation});
   finalState.index++;if(finalState.index>=10){finalState.levelIndex++;finalState.index=0;if(finalState.levelIndex>=finalState.levels.length){finishFinal();return;}}setTimeout(renderFinalQuestion,180);
 }
 function finishFinal(){

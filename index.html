@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Quiz Bee Trainer</title>
-  <link rel="stylesheet" href="style.css?v=20260923-voice">
+  <link rel="stylesheet" href="style.css?v=20260924-ui">
 </head>
 <body>
   <div class="global-toolbar">
@@ -16,44 +16,57 @@
   <main class="app-shell">
     <section id="home" class="screen active">
       <div class="hero card">
-        <p class="eyebrow">IT Quiz Bee Trainer</p>
-        <h1>Elimination + Final Round Practice</h1>
-        <p class="lead">Build your understanding from the Knowledge Map and Learn & Review library, then test yourself with elimination, identification, and adaptive drills.</p>
-        <div class="stats-grid">
-          <div><strong>100</strong><span>MCQs</span></div>
-          <div><strong>60 min</strong><span>Elimination</span></div>
-          <div><strong>30</strong><span>Identification</span></div>
-          <div><strong id="mappedTopicStat">—</strong><span>Mapped topics</span></div>
+        <p class="eyebrow">Your study plan</p>
+        <h1>What should you study today?</h1>
+        <p class="lead">Review what is due, strengthen weak concepts, and build recall across all 10 IT Quiz Bee categories.</p>
+
+        <section class="today-card" aria-labelledby="todayHeading">
+          <div class="today-heading"><div><p class="eyebrow">Recommended next</p><h2 id="todayHeading">Today’s Review</h2></div><span class="today-time">About 10 min</span></div>
+          <div id="dailyPlan" class="daily-plan"></div>
+          <button id="startDailyReview" class="primary home-main-action">Continue Today’s Review</button>
+        </section>
+
+        <div class="home-nav-grid" aria-label="Main study areas">
+          <button id="startStudy" class="home-nav-card"><span class="home-nav-icon">📖</span><strong>Learn</strong><small>Explanations and examples</small></button>
+          <button id="startSmartDrill" class="home-nav-card"><span class="home-nav-icon">⚡</span><strong>Practice</strong><small>Adaptive questions</small></button>
+          <button id="showConcepts" class="home-nav-card"><span class="home-nav-icon">🗺</span><strong>Knowledge Map</strong><small>Browse all topics</small></button>
+          <button id="showAnalytics" class="home-nav-card"><span class="home-nav-icon">📊</span><strong>Progress</strong><small>Strengths and priorities</small></button>
         </div>
-        <div id="homeProgress" class="smart-summary"></div>
-        <div class="cloud-sync-card">
-          <div class="cloud-sync-heading"><div><p class="eyebrow">Cloud Progress</p><h3>Continue on any device</h3></div><span id="cloudStatus" class="sync-status">Local only</span></div>
-          <div id="cloudSignedOut" class="cloud-auth-row">
-            <input id="cloudEmail" type="email" autocomplete="email" placeholder="Your email address" aria-label="Email address for progress sync">
-            <button id="cloudSignIn" class="primary" type="button">Email me a sign-in link</button>
+
+        <details class="more-modes">
+          <summary><span>More practice modes</span><small>Voice, elimination, final round, and competition</small></summary>
+          <div class="mode-grid">
+            <button id="startVoiceReview" class="voice">🎙 Voice Practice</button>
+            <button id="startElim" class="secondary">100-Item Elimination</button>
+            <button id="startFinal" class="secondary">Final Round</button>
+            <button id="showMistakes" class="secondary">Mistake Notebook</button>
+            <button id="startCompetition" class="danger">Competition Simulation</button>
           </div>
-          <div id="cloudSignedIn" class="cloud-auth-row hidden">
-            <span id="cloudAccount" class="muted"></span>
-            <button id="cloudSyncNow" class="secondary" type="button">Sync now</button>
-            <button id="cloudSignOut" class="ghost" type="button">Sign out</button>
+        </details>
+
+        <div id="homeProgress" class="smart-summary home-progress-summary"></div>
+        <div class="scope-stats">
+          <div><strong id="quizReadyStat">130</strong><span>Quiz-ready concepts</span></div>
+          <div><strong id="roadmapOnlyStat">—</strong><span>Additional roadmap topics</span></div>
+        </div>
+
+        <details class="cloud-sync-card">
+          <summary class="cloud-sync-heading"><div><p class="eyebrow">Account & cloud progress</p><h3>Continue on any device</h3></div><span id="cloudStatus" class="sync-status">Local only</span></summary>
+          <div class="cloud-sync-body">
+            <div id="cloudSignedOut" class="cloud-auth-row">
+              <input id="cloudEmail" type="email" autocomplete="email" placeholder="Your email address" aria-label="Email address for progress sync">
+              <button id="cloudSignIn" class="primary" type="button">Email me a sign-in link</button>
+            </div>
+            <div id="cloudSignedIn" class="cloud-auth-row hidden">
+              <span id="cloudAccount" class="muted"></span>
+              <button id="cloudSyncNow" class="secondary" type="button">Sync now</button>
+              <button id="cloudSignOut" class="ghost" type="button">Sign out</button>
+            </div>
+            <p id="cloudMessage" class="note">Sign in with the same email on your phone and computer to share progress.</p>
           </div>
-          <p id="cloudMessage" class="note">Sign in with the same email on your phone and computer to share progress.</p>
-        </div>
-        <div id="dailyPlan" class="daily-plan"></div>
-        <div class="actions">
-          <button id="startDailyReview" class="primary">Start Daily Review</button>
-          <button id="startVoiceReview" class="voice">🎙 Voice Practice</button>
-          <button id="startStudy" class="primary">Learn & Review Concepts</button>
-          <button id="startElim" class="secondary">Start 100-Item Elimination</button>
-          <button id="startFinal" class="secondary">Start Final Round</button>
-          <button id="startSmartDrill" class="smart">Start Smart Drill</button>
-          <button id="showAnalytics" class="secondary">Smart Analytics</button>
-          <button id="showConcepts" class="ghost">Open Knowledge Map</button>
-          <button id="showMistakes" class="ghost">Mistake Notebook</button>
-          <button id="startCompetition" class="danger">Competition Simulation</button>
-        </div>
-        <p class="note">Progress is always saved on this device. Email sign-in is optional and adds cloud sync so the same progress can be used on your phone and computer.</p>
-        <p class="note">The Knowledge Map is a broad study roadmap built around the 10 official scope categories. Study-ready lessons and quiz questions are expanded over time; the map is broader than the current lesson bank and is not an official UMak question set.</p>
+        </details>
+
+        <details class="home-about"><summary>About topic coverage</summary><p class="note">The trainer currently has 130 quiz-ready concepts plus additional roadmap topics being prepared. Progress is always saved on this device; email sign-in adds cloud sync. This is practice material and is not an official UMak question set.</p></details>
       </div>
     </section>
 
@@ -168,6 +181,7 @@
             <option value="untested">Untested</option>
             <option value="strong">Strong</option>
           </select>
+          <button id="mapViewToggle" class="secondary" type="button" aria-pressed="false">Compact list view</button>
         </div>
         <div class="map-legend">
           <span><i class="legend-dot ready"></i> Study-ready</span>
@@ -388,6 +402,6 @@
     </section>
   </main>
   <script src="supabase.min.js"></script>
-  <script src="script.js?v=20260923-voice"></script>
+  <script src="script.js?v=20260924-ui"></script>
 </body>
 </html>
