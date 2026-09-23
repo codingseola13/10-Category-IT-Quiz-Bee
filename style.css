@@ -422,6 +422,20 @@ body[data-theme="dark"] .daily-plan>div,body[data-theme="dark"] .coverage-grid d
 body[data-theme="dark"] .confidence-picker label{border-color:#526477;background:#1b2633}
 @media(max-width:640px){.daily-plan{grid-template-columns:1fr}.daily-plan p{grid-column:auto}.coverage-grid{grid-template-columns:repeat(2,1fr)}.confidence-picker label{margin-right:6px;padding:8px 10px}}
 
+/* Free browser voice practice. */
+button.voice{background:#6f35d8;color:#fff;border-color:#6f35d8}
+button.voice:hover{background:#5f28c3;border-color:#5f28c3}
+.voice-tools{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:10px;margin:18px 0;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.voice-tools span{color:var(--muted);font-size:.84rem;line-height:1.4}
+.voice-tools[data-state="listening"]{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.13)}
+.voice-tools[data-state="listening"] span{color:#7141ca;font-weight:700}
+.voice-tools[data-state="speaking"]{border-color:#4794e8}.voice-tools[data-state="error"] span{color:#bd3340}
+body[data-theme="dark"] button.voice{background:#7c3aed;border-color:#8b5cf6}
+body[data-theme="dark"] .voice-tools{background:#151e29;border-color:#344253}
+body[data-theme="dark"] .voice-tools[data-state="listening"] span{color:#c4a8ff}
+body[data-theme="dark"] .voice-tools[data-state="error"] span{color:#ff9da5}
+@media(max-width:640px){.voice-tools{grid-template-columns:1fr 1fr}.voice-tools span{grid-column:1/-1}.voice-tools button{width:100%}}
+
 /* Optional Supabase progress sync. */
 .cloud-sync-card{margin:18px 0 4px;padding:18px 20px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)}
 .cloud-sync-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}

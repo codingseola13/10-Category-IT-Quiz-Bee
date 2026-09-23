@@ -7,6 +7,7 @@ A browser-based study app for IT Quiz Bee preparation. It combines structured le
 - Knowledge map covering 10 IT subject categories
 - Learn and Review concept library
 - Daily Review with spaced repetition
+- Free Voice Practice using browser speech recognition and read-aloud
 - Confidence tracking for guesses and uncertain answers
 - Automatic Mistake Notebook with follow-up practice
 - Adaptive 20-question Smart Drills

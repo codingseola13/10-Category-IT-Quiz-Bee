@@ -42,6 +42,7 @@
         <div id="dailyPlan" class="daily-plan"></div>
         <div class="actions">
           <button id="startDailyReview" class="primary">Start Daily Review</button>
+          <button id="startVoiceReview" class="voice">🎙 Voice Practice</button>
           <button id="startStudy" class="primary">Learn & Review Concepts</button>
           <button id="startElim" class="secondary">Start 100-Item Elimination</button>
           <button id="startFinal" class="secondary">Start Final Round</button>
@@ -58,12 +59,17 @@
 
     <section id="dailyReviewScreen" class="screen">
       <div class="quiz-header card">
-        <div><p class="eyebrow">Daily Review</p><h2 id="dailyProgress">Question 1</h2><p id="dailyCategory" class="muted"></p></div>
+        <div><p id="dailyModeLabel" class="eyebrow">Daily Review</p><h2 id="dailyProgress">Question 1</h2><p id="dailyCategory" class="muted"></p></div>
         <div class="timer-box"><span>TIME</span><strong id="dailyTimer">0:00</strong></div>
       </div>
       <div class="card recall-card">
         <span id="dailyReason" class="reason-badge"></span>
         <h3 id="dailyPrompt"></h3>
+        <div id="dailyVoiceTools" class="voice-tools">
+          <button id="dailyListen" class="secondary" type="button">🔊 Read question</button>
+          <button id="dailySpeak" class="voice" type="button">🎙 Speak answer</button>
+          <span id="dailyVoiceStatus" role="status" aria-live="polite">You can type or answer aloud.</span>
+        </div>
         <form id="dailyForm">
           <label for="dailyAnswer">Answer from memory</label>
           <input id="dailyAnswer" type="text" autocomplete="off" placeholder="Type the term" aria-label="Your recalled answer">

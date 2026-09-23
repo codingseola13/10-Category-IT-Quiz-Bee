@@ -405,28 +405,63 @@ function buildDailySet(limit=20){
 function recallPromptFor(concept,definition){
   return `Name the IT term: ${maskAnswerTerms(concept,definition)}`;
 }
-let dailyState={questions:[],index:0,correct:0,results:[],startedAt:0,questionStartedAt:0,answered:false};
-function startDailyReview(customRows=null){
+const SpeechRecognitionEngine=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+let activeRecognition=null;
+function setDailyVoiceStatus(message,state=''){$('dailyVoiceStatus').textContent=message;$('dailyVoiceTools').dataset.state=state;}
+function stopDailyVoice(){
+  if(activeRecognition){try{activeRecognition.abort();}catch(e){}activeRecognition=null;}
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+  $('dailySpeak').disabled=false;$('dailySpeak').textContent='🎙 Speak answer';
+}
+function speakDailyText(text){
+  if(!('speechSynthesis' in window)){setDailyVoiceStatus('Read-aloud is unavailable in this browser.','error');return;}
+  window.speechSynthesis.cancel();
+  const clean=text.replace(/_{2,}|\[blank\]/gi,' blank ').replace(/\s+/g,' ').trim();
+  const utterance=new SpeechSynthesisUtterance(clean);utterance.lang='en-US';utterance.rate=.92;utterance.pitch=1;
+  utterance.onstart=()=>setDailyVoiceStatus('Reading aloud…','speaking');
+  utterance.onend=()=>setDailyVoiceStatus(dailyState.answered?'Answer and memory clue read aloud.':'Now say or type your answer.');
+  utterance.onerror=()=>setDailyVoiceStatus('Read-aloud stopped. You can continue by reading the question.','error');
+  window.speechSynthesis.speak(utterance);
+}
+function speakDailyPrompt(){
+  if(dailyState.answered){const x=dailyState.questions[dailyState.index],note=studyNotes[x.category][x.concept];speakDailyText(`The answer is ${x.concept}. ${note[2]}`);return;}
+  speakDailyText($('dailyPrompt').textContent);
+}
+function beginDailyVoiceAnswer(){
+  if(!SpeechRecognitionEngine){setDailyVoiceStatus('Microphone answers are unavailable in this browser. You can still type your answer.','error');return;}
+  if(activeRecognition){activeRecognition.stop();return;}
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+  const recognition=new SpeechRecognitionEngine();activeRecognition=recognition;recognition.lang='en-US';recognition.interimResults=true;recognition.continuous=false;recognition.maxAlternatives=1;
+  recognition.onstart=()=>{$('dailySpeak').textContent='■ Stop listening';setDailyVoiceStatus('Listening… say the IT term.','listening');};
+  recognition.onresult=event=>{const transcript=[...event.results].map(result=>result[0].transcript).join(' ').trim();$('dailyAnswer').value=transcript;setDailyVoiceStatus(event.results[event.results.length-1].isFinal?'Answer captured. Check it before submitting.':'Listening…','listening');};
+  recognition.onerror=event=>{const message=event.error==='not-allowed'?'Microphone permission was denied. Allow microphone access in your browser settings.':event.error==='no-speech'?'No speech was detected. Tap Speak answer and try again.':'Voice capture stopped. You can try again or type your answer.';setDailyVoiceStatus(message,'error');};
+  recognition.onend=()=>{activeRecognition=null;$('dailySpeak').disabled=false;$('dailySpeak').textContent='🎙 Speak answer';if($('dailyVoiceTools').dataset.state==='listening')setDailyVoiceStatus($('dailyAnswer').value?'Answer captured. Check it before submitting.':'Tap Speak answer when you are ready.');$('dailyAnswer').focus();};
+  try{recognition.start();}catch(e){activeRecognition=null;setDailyVoiceStatus('The microphone is already in use. Please try again.','error');}
+}
+let dailyState={questions:[],index:0,correct:0,results:[],startedAt:0,questionStartedAt:0,answered:false,voiceMode:false};
+function startDailyReview(customRows=null,voiceMode=false){
   const rows=customRows||buildDailySet();
-  dailyState={questions:rows,index:0,correct:0,results:[],startedAt:Date.now(),questionStartedAt:0,answered:false};
+  dailyState={questions:rows,index:0,correct:0,results:[],startedAt:Date.now(),questionStartedAt:0,answered:false,voiceMode};
   if(!rows.length){renderHomeProgress();show('home');return;}
   show('dailyReviewScreen');renderDailyQuestion();
 }
 function renderDailyQuestion(){
+  stopDailyVoice();
   const x=dailyState.questions[dailyState.index],note=studyNotes[x.category][x.concept];dailyState.answered=false;dailyState.questionStartedAt=Date.now();
-  $('dailyProgress').textContent=`Question ${dailyState.index+1} of ${dailyState.questions.length}`;$('dailyCategory').textContent=x.category;$('dailyReason').textContent=x.reason||'Follow-up practice';
+  $('dailyModeLabel').textContent=dailyState.voiceMode?'Voice Practice':'Daily Review';$('dailyProgress').textContent=`Question ${dailyState.index+1} of ${dailyState.questions.length}`;$('dailyCategory').textContent=x.category;$('dailyReason').textContent=x.reason||'Follow-up practice';
   $('dailyPrompt').textContent=recallPromptFor(x.concept,note[0]);$('dailyAnswer').value='';$('dailyFeedback').className='feedback hidden';$('dailyFeedback').replaceChildren();$('dailyNext').classList.add('hidden');$('dailyForm').classList.remove('hidden');
-  const unsure=document.querySelector('input[name="dailyConfidence"][value="unsure"]');if(unsure)unsure.checked=true;$('dailyAnswer').focus();updateDailyTimer();
+  $('dailyListen').textContent='🔊 Read question';$('dailyListen').disabled=!('speechSynthesis' in window);$('dailySpeak').disabled=!SpeechRecognitionEngine;setDailyVoiceStatus(SpeechRecognitionEngine?'You can type or answer aloud.':'Your browser does not support microphone answers. Typing still works.',SpeechRecognitionEngine?'':'error');
+  const unsure=document.querySelector('input[name="dailyConfidence"][value="unsure"]');if(unsure)unsure.checked=true;$('dailyAnswer').focus();updateDailyTimer();if(dailyState.voiceMode)speakDailyPrompt();
 }
 function updateDailyTimer(){if(!$('dailyReviewScreen').classList.contains('active')||dailyState.answered)return;const sec=Math.floor((Date.now()-dailyState.questionStartedAt)/1000);$('dailyTimer').textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;requestAnimationFrame(updateDailyTimer);}
 function submitDailyAnswer(event){
-  event.preventDefault();if(dailyState.answered)return;dailyState.answered=true;const x=dailyState.questions[dailyState.index],raw=$('dailyAnswer').value,answer=normalize(raw),ok=acceptedAnswersFor(x.category,x.concept).includes(answer),confidence=document.querySelector('input[name="dailyConfidence"]:checked')?.value||'unsure',time=(Date.now()-dailyState.questionStartedAt)/1000,note=studyNotes[x.category][x.concept];
+  event.preventDefault();if(dailyState.answered)return;stopDailyVoice();dailyState.answered=true;const x=dailyState.questions[dailyState.index],raw=$('dailyAnswer').value,answer=normalize(raw),ok=acceptedAnswersFor(x.category,x.concept).includes(answer),confidence=document.querySelector('input[name="dailyConfidence"]:checked')?.value||'unsure',time=(Date.now()-dailyState.questionStartedAt)/1000,note=studyNotes[x.category][x.concept];
   if(ok)dailyState.correct++;recordResult({mode:'recall',category:x.category,concept:x.concept,correct:ok,time,maxTime:30,confidence,prompt:$('dailyPrompt').textContent,given:raw,expected:x.concept,explanation:note[0]});dailyState.results.push({...x,ok,raw,time,confidence});
   const f=$('dailyFeedback');f.className=`feedback ${ok?'correct':'wrong'}`;f.innerHTML=`<strong>${ok?'Correct.':'Not quite.'}</strong><p class="feedback-answer">${x.concept}</p><p><b>Example:</b> ${note[1]}</p><p><b>Remember:</b> ${note[2]}</p>${ok&&confidence==='guess'?'<p class="feedback-note">Because you marked it as a guess, it will appear again later.</p>':''}`;
-  $('dailyForm').classList.add('hidden');$('dailyNext').textContent=dailyState.index===dailyState.questions.length-1?'Finish Review':'Next Question';$('dailyNext').classList.remove('hidden');
+  $('dailyForm').classList.add('hidden');$('dailyNext').textContent=dailyState.index===dailyState.questions.length-1?'Finish Review':'Next Question';$('dailyNext').classList.remove('hidden');$('dailyListen').textContent='🔊 Read answer';setDailyVoiceStatus('Answer checked. Use Read answer to hear the result.');if(dailyState.voiceMode)speakDailyPrompt();
 }
-function nextDailyQuestion(){dailyState.index++;if(dailyState.index>=dailyState.questions.length){finishDailyReview();return;}renderDailyQuestion();}
-function finishDailyReview(){const total=dailyState.questions.length,misses=dailyState.results.filter(x=>!x.ok),guesses=dailyState.results.filter(x=>x.confidence==='guess').length;addAttempt({type:'Daily Review',score:dailyState.correct,max:total,seconds:Math.round((Date.now()-dailyState.startedAt)/1000)});$('dailyScore').textContent=`${dailyState.correct}/${total} recalled correctly`;$('dailySummary').innerHTML=`${misses.length} answer${misses.length===1?'':'s'} scheduled for near-term review. ${guesses} answer${guesses===1?' was':'s were'} marked as guesses.`;$('dailyReviewList').innerHTML=misses.length?misses.map(x=>`<div class="review-item"><h4>${x.concept}</h4><p>${x.category}</p><p>Your answer: ${x.raw||'No answer'}</p><p>${studyNotes[x.category][x.concept][0]}</p></div>`).join(''):'<div class="review-item"><h4>Clean review</h4><p>You recalled every term correctly.</p></div>';renderHomeProgress();show('dailyResults');}
+function nextDailyQuestion(){stopDailyVoice();dailyState.index++;if(dailyState.index>=dailyState.questions.length){finishDailyReview();return;}renderDailyQuestion();}
+function finishDailyReview(){stopDailyVoice();const total=dailyState.questions.length,misses=dailyState.results.filter(x=>!x.ok),guesses=dailyState.results.filter(x=>x.confidence==='guess').length;addAttempt({type:dailyState.voiceMode?'Voice Practice':'Daily Review',score:dailyState.correct,max:total,seconds:Math.round((Date.now()-dailyState.startedAt)/1000)});$('dailyScore').textContent=`${dailyState.correct}/${total} recalled correctly`;$('dailySummary').innerHTML=`${misses.length} answer${misses.length===1?'':'s'} scheduled for near-term review. ${guesses} answer${guesses===1?' was':'s were'} marked as guesses.`;$('dailyReviewList').innerHTML=misses.length?misses.map(x=>`<div class="review-item"><h4>${x.concept}</h4><p>${x.category}</p><p>Your answer: ${x.raw||'No answer'}</p><p>${studyNotes[x.category][x.concept][0]}</p></div>`).join(''):'<div class="review-item"><h4>Clean review</h4><p>You recalled every term correctly.</p></div>';renderHomeProgress();show('dailyResults');}
 function openMistakeNotebook(){
   const mistakes=progress.mistakes||[],open=mistakes.filter(m=>!m.resolved);$('mistakeStats').innerHTML=`<div><strong>${open.length}</strong><span>Open mistakes</span></div><div><strong>${mistakes.length-open.length}</strong><span>Resolved</span></div>`;
   $('mistakeList').innerHTML=mistakes.length?mistakes.map(m=>`<article class="review-item mistake-entry ${m.resolved?'resolved':''}"><div class="section-title-row"><div><span class="study-category">${m.category}</span><h3>${m.concept}</h3></div><span class="status-pill ${m.resolved?'strong':'needs'}">${m.resolved?'Resolved':'Review'}</span></div>${m.prompt?`<p><strong>${m.prompt}</strong></p>`:''}<p>Your answer: ${m.given}</p><p>Correct answer: ${m.expected}</p><p>${m.explanation}</p><div class="actions"><button class="primary mistakePractice" data-category="${encodeURIComponent(m.category)}" data-concept="${encodeURIComponent(m.concept)}">Practice again</button><button class="secondary mistakeResolve" data-id="${m.id}">${m.resolved?'Reopen':'Mark resolved'}</button></div></article>`).join(''):'<div class="card empty-state">No mistakes saved yet. Incorrect quiz and daily-review answers will appear here.</div>';
@@ -440,7 +475,7 @@ let smartState={questions:[],index:0,correct:0,startedAt:0,questionStartedAt:0,a
 let competitionMode=false;
 let competitionElimScore=null;
 
-document.querySelectorAll('.homeBtn').forEach(b=>b.addEventListener('click',()=>{clearInterval(elimState.timer);clearInterval(finalState.timer);competitionMode=false;renderHomeProgress();show('home');}));
+document.querySelectorAll('.homeBtn').forEach(b=>b.addEventListener('click',()=>{stopDailyVoice();clearInterval(elimState.timer);clearInterval(finalState.timer);competitionMode=false;renderHomeProgress();show('home');}));
 $('studyBack').addEventListener('click',()=>{
   if(studyReturnScreen==='conceptScreen'){
     show('conceptScreen',false);
@@ -456,9 +491,12 @@ $('cloudEmail').addEventListener('keydown',event=>{if(event.key==='Enter')sendCl
 $('cloudSyncNow').addEventListener('click',pullCloudProgress);
 $('cloudSignOut').addEventListener('click',signOutCloud);
 $('startDailyReview').addEventListener('click',()=>startDailyReview());
+$('startVoiceReview').addEventListener('click',()=>startDailyReview(null,true));
+$('dailyListen').addEventListener('click',speakDailyPrompt);
+$('dailySpeak').addEventListener('click',beginDailyVoiceAnswer);
 $('dailyForm').addEventListener('submit',submitDailyAnswer);
 $('dailyNext').addEventListener('click',nextDailyQuestion);
-$('dailyAgain').addEventListener('click',()=>startDailyReview());
+$('dailyAgain').addEventListener('click',()=>startDailyReview(null,dailyState.voiceMode));
 $('showMistakes').addEventListener('click',openMistakeNotebook);
 $('dailyMistakes').addEventListener('click',openMistakeNotebook);
 $('startCompetition').addEventListener('click',()=>{competitionMode=true;competitionElimScore=null;startElimination();});
