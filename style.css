@@ -493,3 +493,49 @@ body[data-theme="dark"] #conceptScreen.compact-map .roadmap-core{background:#263
   #conceptScreen.compact-map .roadmap-stage{grid-template-columns:1fr}#conceptScreen.compact-map .roadmap-core{grid-column:1}
 }
 @media(max-width:430px){.today-time{display:none}.scope-stats{grid-template-columns:1fr 1fr}.scope-stats>div{padding:10px}.cloud-sync-card{padding:0}.mode-grid{grid-template-columns:1fr}.mode-grid .danger{grid-column:auto}}
+
+/* Calm, readable answer flow across the practice modes. */
+#dailyReviewScreen .recall-card,#elim .question-card,#finalQuiz .question-card,#smartDrill .question-card{max-width:760px;margin-inline:auto;padding:clamp(20px,4vw,34px);border-radius:20px;box-shadow:0 10px 28px rgba(19,36,59,.055)}
+#dailyPrompt,#elimQuestion,#finalPrompt,#smartQuestion{max-width:60ch;margin:12px 0 20px;font-size:clamp(1.3rem,2.5vw,1.65rem);line-height:1.45;letter-spacing:-.018em;text-wrap:pretty}
+#elimOptions,#smartOptions{gap:11px}
+#elimOptions .option,#smartOptions .option{padding:15px 18px;border-radius:12px;line-height:1.45;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+#elimOptions .option:hover:not(:disabled),#smartOptions .option:hover:not(:disabled){border-color:#638ed1;box-shadow:0 4px 14px rgba(29,81,148,.09);transform:translateY(-1px)}
+#elimOptions .option.selected,#smartOptions .option.selected{border-color:#3f75bd;background:#edf4ff;box-shadow:0 0 0 2px rgba(63,117,189,.13)}
+#dailyAnswer,#finalAnswer{margin:12px 0 16px;border-radius:12px;min-height:52px}
+#dailyAnswer:focus,#finalAnswer:focus,#elimOptions .option:focus-visible,#smartOptions .option:focus-visible,#finalNext:focus-visible{outline:3px solid rgba(54,115,204,.27);outline-offset:2px}
+#dailyFeedback,#finalFeedback,#smartFeedback{padding:18px 20px;border-radius:14px;line-height:1.55}
+#dailyFeedback .feedback-answer,#finalFeedback .feedback-answer{margin:10px 0;font-size:1.25rem}
+#finalNext{width:100%;margin-top:8px}
+body[data-theme="dark"] #dailyReviewScreen .recall-card,body[data-theme="dark"] #elim .question-card,body[data-theme="dark"] #finalQuiz .question-card,body[data-theme="dark"] #smartDrill .question-card{box-shadow:0 12px 30px rgba(0,0,0,.18)}
+body[data-theme="dark"] #elimOptions .option.selected,body[data-theme="dark"] #smartOptions .option.selected{background:#243b57;border-color:#79a9ed;color:#fff}
+@media(prefers-reduced-motion:reduce){#elimOptions .option,#smartOptions .option{transition:none}#elimOptions .option:hover:not(:disabled),#smartOptions .option:hover:not(:disabled){transform:none}}
+
+/* Dark minimal is the default; saved light preference still works. */
+.feedback.close{background:#fff7e8;border:1px solid #e8c785;color:#664b16}
+body[data-theme="dark"]{--bg:#0c121a;--surface:#151e29;--surface-2:#1b2633;--surface-3:#253345;--text:#edf3fa;--muted:#a8b6c6;--border:#344253;--border-strong:#52657b;--accent:#84b6ff;--accent-soft:#203854;--shadow:0 10px 28px rgba(0,0,0,.15)}
+body[data-theme="dark"] .primary,body[data-theme="dark"] .smart,body[data-theme="dark"] button.voice{background:#3a76c6;border-color:#3a76c6;color:#fff}
+body[data-theme="dark"] .primary:hover,body[data-theme="dark"] .smart:hover,body[data-theme="dark"] button.voice:hover{background:#4a86d6;border-color:#4a86d6}
+body[data-theme="dark"] .today-card{background:#192b40;border-color:#3d638e}
+body[data-theme="dark"] .reason-badge,body[data-theme="dark"] .result-insight{background:#20334b;border-color:#3d5878;color:#d4e5fb}
+body[data-theme="dark"] .feedback.close{background:#332919;border-color:#876734;color:#f3d9a3}
+body[data-theme="dark"] #conceptScreen{--roadmap-paper:#151e29;--roadmap-core:#243b58;--roadmap-node:#203147;--roadmap-blue:#6b9ddd}
+body[data-theme="dark"] #conceptScreen .roadmap-board,body[data-theme="dark"] #conceptScreen .roadmap-category,body[data-theme="dark"] #conceptScreen .roadmap-category>summary{background:#151e29;border-color:#344253}
+body[data-theme="dark"] #conceptScreen .roadmap-core{background:#243b58;border-color:#6289bd}
+body[data-theme="dark"] #conceptScreen .roadmap-core span{color:#e8f2ff}
+body[data-theme="dark"] #conceptScreen .map-node,body[data-theme="dark"] #conceptScreen .map-node.ready,body[data-theme="dark"] #conceptScreen .map-node.roadmap-only{background:#203147;border-color:#506a89;color:#e8f2ff}
+body[data-theme="dark"] #conceptScreen .map-node-title{color:#e8f2ff}
+body[data-theme="dark"] #conceptScreen .map-node:hover,body[data-theme="dark"] #conceptScreen .map-node.ready:hover{background:#29405d;border-color:#79a9e7}
+body[data-theme="dark"] #conceptScreen.compact-map .roadmap-core{background:#243b58}
+body[data-theme="dark"] #conceptScreen.compact-map .roadmap-core span{color:#e8f2ff}
+
+/* Layered answer feedback: result first, lesson details on demand. */
+.answer-status{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
+.answer-status>span{flex:0 0 auto;border-radius:999px;padding:5px 9px;font-size:.74rem;font-weight:800;letter-spacing:.045em;text-transform:uppercase}
+.answer-status>strong{display:block;margin:2px 0 0;font-size:1rem;line-height:1.45}
+.answer-status.correct>span{background:#dff4e5;color:#176b2c}.answer-status.close>span{background:#fff0c7;color:#745000}.answer-status.wrong>span{background:#f8dedd;color:#94251e}
+.feedback-summary{margin:6px 0 0;line-height:1.55;color:var(--text)}
+.feedback-details{margin-top:14px;border-top:1px solid currentColor;padding-top:12px;color:var(--muted)}
+.feedback-details summary{cursor:pointer;color:var(--accent);font-weight:700;list-style-position:inside}
+.feedback-details p{margin:10px 0;line-height:1.6}.trusted-source{display:inline-block;margin-top:4px;color:var(--accent);font-weight:700;text-decoration:none}.trusted-source:hover{text-decoration:underline}
+body[data-theme="dark"] .answer-status.correct>span{background:#1d4a2d;color:#bfe9ca}body[data-theme="dark"] .answer-status.close>span{background:#58431f;color:#ffe2a8}body[data-theme="dark"] .answer-status.wrong>span{background:#5b2927;color:#ffc9c5}
+@media(max-width:520px){.answer-status{flex-direction:column;gap:6px}.feedback-details summary{min-height:40px;padding-block:8px}}

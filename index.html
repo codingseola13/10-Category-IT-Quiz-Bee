@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Quiz Bee Trainer</title>
-  <link rel="stylesheet" href="style.css?v=20260924-ui">
+  <link rel="stylesheet" href="style.css?v=20260930-single-answer">
 </head>
 <body>
   <div class="global-toolbar">
@@ -308,7 +308,7 @@
           <div><strong>Average</strong><span>10 questions · 20 sec · 5 pts</span></div>
           <div><strong>Difficult</strong><span>10 questions · 30 sec · 7 pts</span></div>
         </div>
-        <p class="note">Type the answer yourself. Answers are checked case-insensitively and accept common equivalent forms.</p>
+        <p class="note">Capitalization and spacing do not affect your score. Feedback labels answers as Exact, Equivalent, Close, or Different. A close spelling earns no point.</p>
         <div class="actions">
           <button id="beginFinal" class="primary">Begin Easy Round</button>
           <button class="ghost homeBtn">Home</button>
@@ -335,6 +335,8 @@
           <input id="finalAnswer" type="text" autocomplete="off" placeholder="Type your answer" aria-label="Your answer">
           <button class="primary" type="submit">Submit Answer</button>
         </form>
+        <div id="finalFeedback" class="feedback hidden" role="status" aria-live="polite"></div>
+        <button id="finalNext" class="primary hidden" type="button">Next Question</button>
       </div>
     </section>
 
@@ -345,7 +347,7 @@
         <div id="finalSmartSummary" class="result-insight"></div>
         <div id="finalBreakdown" class="analytics-grid"></div>
         <div class="actions">
-          <button id="reviewFinal" class="secondary">Review Missed Identification</button>
+          <button id="reviewFinal" class="secondary">Review All Answers</button>
           <button id="finalResultsAnalytics" class="smart">Open Smart Analytics</button>
           <button class="ghost homeBtn">Home</button>
         </div>
@@ -402,6 +404,7 @@
     </section>
   </main>
   <script src="supabase.min.js"></script>
-  <script src="script.js?v=20260924-ui"></script>
+  <script src="question_copy.js?v=20260930-single-answer"></script>
+  <script src="script.js?v=20260930-single-answer"></script>
 </body>
 </html>
